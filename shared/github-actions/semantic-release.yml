@@ -1,0 +1,62 @@
+name: Semantic Version & Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for releasable commits and determine bump
+        id: version
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=%s)
+          if ! echo "$COMMITS" | grep -qiE "^feat|^fix"; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "No feat or fix commits since $LAST_TAG — skipping release"
+            exit 0
+          fi
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          if echo "$COMMITS" | grep -qiE "^feat!:|BREAKING CHANGE"; then
+            echo "bump=major" >> "$GITHUB_OUTPUT"
+          elif echo "$COMMITS" | grep -qiE "^feat"; then
+            echo "bump=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get current version
+        if: steps.version.outputs.should_release == 'true'
+        id: current
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate next version
+        if: steps.version.outputs.should_release == 'true'
+        id: next
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ steps.current.outputs.version }}"
+          case "${{ steps.version.outputs.bump }}" in
+            major) echo "version=$((major + 1)).0.0" >> "$GITHUB_OUTPUT" ;;
+            minor) echo "version=${major}.$((minor + 1)).0" >> "$GITHUB_OUTPUT" ;;
+            patch) echo "version=${major}.${minor}.$((patch + 1))" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Create release
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.next.outputs.version }}" \
+            --title "v${{ steps.next.outputs.version }}" \
+            --generate-notes

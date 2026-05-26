@@ -1,0 +1,39 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build and deploy to Firebase App Distribution"
+  lane :firebase_distribute do
+    sh("flutter", "build", "apk", "--release")
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID"],
+      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      groups: "internal-testers",
+      release_notes: changelog_from_git_commits(commits_count: 5),
+    )
+  end
+
+  desc "Deploy to Play Store internal track"
+  lane :play_store_internal do
+    sh("flutter", "build", "appbundle", "--release")
+    upload_to_play_store(
+      track: "internal",
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      json_key: ENV["PLAY_STORE_JSON_KEY"],
+    )
+  end
+end
+
+platform :ios do
+  desc "Build and deploy to TestFlight"
+  lane :testflight_deploy do
+    sh("flutter", "build", "ios", "--release")
+    build_app(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_method: "app-store",
+    )
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+    )
+  end
+end
