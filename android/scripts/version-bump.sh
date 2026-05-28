@@ -4,8 +4,17 @@ set -euo pipefail
 BUMP_TYPE=${1:-patch}
 GRADLE_FILE=${GRADLE_FILE:-app/build.gradle.kts}
 
-CURRENT_CODE=$(grep -oE 'versionCode = [0-9]+' "$GRADLE_FILE" | grep -oE '[0-9]+$')
-CURRENT_NAME=$(grep -oE 'versionName = "[^"]+"' "$GRADLE_FILE" | sed 's/versionName = "//;s/"$//')
+CURRENT_CODE=$(grep -oE 'versionCode = [0-9]+' "$GRADLE_FILE" | grep -oE '[0-9]+$' || true)
+CURRENT_NAME=$(grep -oE 'versionName = "[^"]+"' "$GRADLE_FILE" | sed 's/versionName = "//;s/"$//' || true)
+
+if [ -z "$CURRENT_CODE" ]; then
+  echo "Error: could not find 'versionCode = <int>' in $GRADLE_FILE"
+  exit 1
+fi
+if [[ ! "$CURRENT_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Error: versionName '$CURRENT_NAME' is not in major.minor.patch form in $GRADLE_FILE"
+  exit 1
+fi
 
 NEW_CODE=$((CURRENT_CODE + 1))
 

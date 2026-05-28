@@ -69,6 +69,20 @@ teardown() {
   grep -q 'keyPassword=keypass' app/signing.properties
 }
 
+@test "secret files are owner-only (not group/world readable)" {
+  export KEYSTORE_BASE64="dGVzdGtleXN0b3Jl"
+  export KEYSTORE_PASSWORD="storepass"
+  export KEY_ALIAS="myalias"
+  export KEY_PASSWORD="keypass"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  # GNU stat (Linux CI) then BSD stat (macOS) fallback.
+  perms=$(stat -c '%a' app/signing.properties 2>/dev/null || stat -f '%Lp' app/signing.properties)
+  [ "$perms" = "600" ]
+  perms=$(stat -c '%a' app/release.keystore 2>/dev/null || stat -f '%Lp' app/release.keystore)
+  [ "$perms" = "600" ]
+}
+
 @test "keystore is correctly decoded from base64" {
   export KEYSTORE_BASE64="$(echo -n 'hello keystore' | base64)"
   export KEYSTORE_PASSWORD="pass"

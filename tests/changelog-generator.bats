@@ -46,7 +46,25 @@ teardown() {
   echo "change" > file2.txt && git add file2.txt
   git commit --quiet -m "feat: after tag"
   run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
   [[ "$output" == *"Changes since v0.1.0"* ]]
+}
+
+@test "includes the first commit when no prior tag exists" {
+  git tag -d v0.1.0
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"feat: initial commit"* ]]
+}
+
+@test "empty sections render '- None' instead of a blank section" {
+  echo "doc" > docs.txt && git add docs.txt
+  git commit --quiet -m "docs: update readme"
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  # No feat/fix commits since the tag, so those sections must show "- None".
+  [[ "$output" == *"### Features"$'\n'"- None"* ]]
+  [[ "$output" == *"### Bug Fixes"$'\n'"- None"* ]]
 }
 
 @test "script has set -euo pipefail" {

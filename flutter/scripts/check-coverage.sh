@@ -10,7 +10,15 @@ if ! command -v lcov &> /dev/null; then
   exit 0
 fi
 
-COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | sed 's/.*: //;s/%.*//')
+COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | sed 's/.*: //;s/%.*//' || true)
+
+# Guard against a missing/changed lcov format: an empty or non-numeric value
+# would make the awk comparison error out and the gate silently fail open.
+if [[ ! "$COVERAGE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+  echo "Error: could not parse line coverage from lcov output (got: '${COVERAGE}')"
+  exit 1
+fi
+
 echo "Line coverage: ${COVERAGE}%"
 
 if awk "BEGIN {exit !($COVERAGE < $THRESHOLD)}"; then
