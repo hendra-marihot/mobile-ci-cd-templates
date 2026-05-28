@@ -44,9 +44,14 @@ jobs:
       - name: Calculate next version
         if: steps.version.outputs.should_release == 'true'
         id: next
+        env:
+          # Bind interpolated values to env vars rather than inlining ${{ }} into
+          # the shell, so a crafted tag name cannot inject shell commands.
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+          BUMP: ${{ steps.version.outputs.bump }}
         run: |
-          IFS='.' read -r major minor patch <<< "${{ steps.current.outputs.version }}"
-          case "${{ steps.version.outputs.bump }}" in
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          case "$BUMP" in
             major) echo "version=$((major + 1)).0.0" >> "$GITHUB_OUTPUT" ;;
             minor) echo "version=${major}.$((minor + 1)).0" >> "$GITHUB_OUTPUT" ;;
             patch) echo "version=${major}.${minor}.$((patch + 1))" >> "$GITHUB_OUTPUT" ;;
@@ -56,7 +61,8 @@ jobs:
         if: steps.version.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.next.outputs.version }}
         run: |
-          gh release create "v${{ steps.next.outputs.version }}" \
-            --title "v${{ steps.next.outputs.version }}" \
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
             --generate-notes

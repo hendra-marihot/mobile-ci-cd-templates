@@ -15,6 +15,9 @@ concurrency:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    # Gate signing-secret access behind a protected environment, matching
+    # android/github-actions/release-play-store.yml.
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
