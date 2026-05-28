@@ -24,7 +24,8 @@ setup() {
   for f in "$ROOT"/android/scripts/*.sh \
            "$ROOT"/flutter/scripts/*.sh \
            "$ROOT"/shared/scripts/*.sh; do
-    ! grep -qiE '(password|secret|token)\s*=\s*["\x27][a-zA-Z0-9]' "$f"
+    # POSIX classes + literal quotes for BSD/GNU grep parity (\s, \x27 are not portable).
+    ! grep -qiE "(password|secret|token)[[:space:]]*=[[:space:]]*[\"'][a-zA-Z0-9]" "$f"
   done
 }
 

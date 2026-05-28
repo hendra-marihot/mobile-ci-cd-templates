@@ -34,13 +34,16 @@ setup() {
   for f in "$ROOT"/android/github-actions/*.yml \
            "$ROOT"/flutter/github-actions/*.yml \
            "$ROOT"/shared/github-actions/*.yml; do
-    ! grep -qiE '(password|secret|token|key)\s*[:=]\s*["\x27][^${\x27"]' "$f"
+    # POSIX classes + literal quotes so the pattern behaves identically under
+    # BSD grep (macOS) and GNU grep (CI); \s and \x27 are not portable.
+    ! grep -qiE "(password|secret|token|key)[[:space:]]*[:=][[:space:]]*[\"'][^\${\"']" "$f"
   done
 }
 
 @test "actions use pinned versions" {
   for f in "$ROOT"/android/github-actions/*.yml \
-           "$ROOT"/flutter/github-actions/*.yml; do
+           "$ROOT"/flutter/github-actions/*.yml \
+           "$ROOT"/shared/github-actions/*.yml; do
     ! grep -qE 'uses: .+@(main|master)\b' "$f"
   done
 }
