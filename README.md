@@ -1,5 +1,8 @@
 # Mobile CI/CD Templates
 
+[![CI](https://github.com/hendra-marihot/mobile-ci-cd-templates/actions/workflows/ci.yml/badge.svg)](https://github.com/hendra-marihot/mobile-ci-cd-templates/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 CI/CD workflow templates for Android and Flutter — covering PR gates, continuous integration, release automation, and code signing. Part of a [broader portfolio](#related-repositories) demonstrating senior mobile engineering competencies.
 
 ```mermaid
